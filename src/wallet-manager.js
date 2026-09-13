@@ -61,7 +61,7 @@ export default class WalletManager {
     const isSeed = seedOrSigner instanceof Uint8Array
 
     /** @private */
-    this._seed = isSeed ? seedOrSigner : undefined
+    this._seed = isSeed ? Uint8Array.from(seedOrSigner) : undefined
 
     /**
      * The default signer.
@@ -238,20 +238,24 @@ export default class WalletManager {
    * Disposes all wallet accounts and signers, clearing secret material from memory.
    */
   dispose () {
+    const failures = []
+    const attempt = (cleanup) => {
+      try { cleanup() } catch (error) { failures.push(error) }
+    }
     for (const account of Object.values(this._accounts)) {
-      if (account.keyPair?.privateKey) {
-        account.dispose()
-      }
+      attempt(() => {
+        if (account.keyPair?.privateKey) account.dispose()
+      })
     }
-
-    this._defaultSigner?.dispose()
-
-    for (const signer of Object.values(this._signers)) {
-      signer.dispose()
+    const signers = new Set([this._defaultSigner, ...Object.values(this._signers)])
+    for (const signer of signers) {
+      if (signer) attempt(() => signer.dispose())
     }
-
+    if (this._seed) attempt(() => this._seed.fill(0))
+    this._seed = undefined
     this._accounts = {}
     this._defaultSigner = undefined
     this._signers = {}
+    if (failures.length) throw new AggregateError(failures, 'Wallet cleanup failed')
   }
 }
