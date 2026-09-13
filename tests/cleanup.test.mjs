@@ -35,4 +35,3 @@ test("base cleanup attempts remaining signers after a signer fails", async () =>
   seed.fill(0);
   original.fill(0);
 });
-
