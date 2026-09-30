@@ -1,22 +1,23 @@
 name: build
 
 on:
-  push:
-    branches: [main, develop]
+  workflow_dispatch:
   pull_request:
-    branches: [main, develop]
+    types: [labeled]
 
 permissions:
   contents: read
 
 jobs:
   lint:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'ci:run'
     runs-on: ubuntu-latest
     name: Lint
     steps:
       - uses: tetherto/oss-actions/node-base@v1
       - run: npm run lint
   test:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'ci:run'
     strategy:
       matrix:
         include:
